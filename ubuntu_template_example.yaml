@@ -1,0 +1,33 @@
+#cloud-config
+
+# Enable SSH
+ssh:
+  enabled: true
+
+# Set root password
+root_password: p@ssw0rd123
+
+# Enable root account
+root: true
+
+# Create additional admin user
+users:
+  - name: hmadmin
+    groups: [sudo]
+    shell: /bin/bash
+    password: p@ssw0rd123
+
+# Run sysprep to remove cloud-init and reset network config
+runcmd:
+  - [ sh, -c, "sudo /usr/bin/sysprep --reset-network --target cloud-init" ]
+  - [ sh, -c, "sudo /usr/bin/sysprep --generalize --target vmware" ]
+  - [ sh, -c, "sudo /usr/bin/sysprep --vmware-identity --target vmware" ]
+  - [ sh, -c, "sudo /usr/bin/sysprep --hw-clock --target vmware" ]
+  - [ sh, -c, "sudo /usr/bin/sysprep --net-kernel-modules --target vmware" ]
+  - [ sh, -c, "sudo /usr/bin/sysprep --swap-uuid --target vmware" ]
+
+# Set VMware-specific settings
+vmware:
+  - [ set-vmname, '$(vmname)' ]
+  - [ set-vmmemory, '4096' ]
+  - [ set-vmcpu, '2' ]
