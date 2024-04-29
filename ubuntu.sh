@@ -19,6 +19,34 @@ sudo apt clean
 # Set root password
 echo "root:p@ssw0rd123" | sudo chpasswd
 
+# Define the path to the sshd_config file
+sshd_config="/etc/ssh/sshd_config"
+
+# Check if the sshd_config file exists
+if [ ! -f "$sshd_config" ]; then
+    echo "Error: sshd_config file not found at $sshd_config"
+    exit 1
+fi
+
+# Function to enable or update SSH config options
+enable_ssh_option() {
+    local option_name=$1
+    local option_value=$2
+
+    # Check if the option is already enabled
+    if grep -q "^$option_name $option_value" "$sshd_config"; then
+        echo "$option_name is already set to $option_value."
+    else
+        # Add or update the option
+        if ! grep -q "^$option_name" "$sshd_config"; then
+            echo "$option_name $option_value" >> "$sshd_config"
+        else
+            sed -i "s/^$option_name.*/$option_name $option_value/" "$sshd_config"
+        fi
+        echo "$option_name has been set to $option_value."
+    fi
+}
+
 # Create root directories with appropriate permissions
 sudo mkdir -p /IN /temp
 sudo chmod 755 /IN /temp
@@ -28,7 +56,6 @@ sudo chown root:root /temp
 # Clean cloud-init logs and disable cloud-init
 sudo cloud-init clean --logs
 sudo touch /etc/cloud/cloud-init.disabled
-#sudo rm -rf /etc/netplan/*.yaml
 
 # Purge cloud-init and remove residual configurations
 sudo apt purge cloud-init -y
@@ -49,13 +76,14 @@ exit 0
 EOL
 sudo chmod +x /etc/rc.local
 
-# Update SSHd configuration to allow password authentication
-sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/g' /etc/ssh/sshd_config
-sudo sed -i 's/#ChallengeResponseAuthentication yes/ChallengeResponseAuthentication yes/g' /etc/ssh/sshd_config
+# Enable ChallengeResponseAuthentication
+enable_ssh_option "ChallengeResponseAuthentication" "yes"
 
-# Uncomment PasswordAuthentication and ChallengeResponseAuthentication if commented
-sudo sed -i 's/#PasswordAuthentication/PasswordAuthentication/g' /etc/ssh/sshd_config
-sudo sed -i 's/#ChallengeResponseAuthentication/ChallengeResponseAuthentication/g' /etc/ssh/sshd_config
+# Enable PasswordAuthentication
+enable_ssh_option "PasswordAuthentication" "yes"
+
+# Restart SSH service to apply changes
+sudo systemctl restart ssh
 
 # Reset machine-id for DHCP leases
 echo "" | sudo tee /etc/machine-id >/dev/null
@@ -64,7 +92,9 @@ echo "" | sudo tee /etc/machine-id >/dev/null
 sudo swapoff --all
 sudo sed -ri '/\sswap\s/s/^#?/#/' /etc/fstab
 
-# Cleanup shell history and shutdown
+# Cleanup shell history
 history -c
 history -w
+
+# Shutdown the system
 #sudo shutdown -h now
