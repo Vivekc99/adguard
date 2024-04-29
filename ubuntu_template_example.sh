@@ -16,6 +16,9 @@ sudo systemctl restart cockpit
 # Cleanup apt cache
 sudo apt clean
 
+# Set root password
+echo "root:p@ssw0rd123" | sudo chpasswd
+
 # Create root directories with appropriate permissions
 sudo mkdir -p /IN /temp
 sudo chmod 755 /IN /temp
