@@ -1,68 +1,60 @@
 #!/bin/bash
 
-# Set root password
-echo 'root:p@ssw0rd123' | sudo chpasswd
-
-# Update and install Cockpit
+# Install Cockpit
 sudo apt update
 sudo apt install cockpit -y
-sudo systemctl start cockpit
-sudo systemctl status cockpit
 
-# Create directories
-sudo mkdir -p /IN
-sudo chown root:admin /IN
-sudo chmod 770 /IN
-sudo mkdir /temp
-sudo chmod 777 /temp
+# Change Cockpit default port to 5000
+sudo sed -i 's/ListenStream=9000/ListenStream=5000/g' /lib/systemd/system/cockpit.socket
 
-# Edit SSH config
-sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-sudo sed -i 's/ChallengeResponseAuthentication no/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config
-sudo systemctl restart ssh
+# Reload systemd daemon to apply changes
+sudo systemctl daemon-reload
 
-# Clean cloud-init
+# Restart Cockpit service
+sudo systemctl restart cockpit
+
+# Cleanup apt cache
+sudo apt clean
+
+# Create root directories with appropriate permissions
+sudo mkdir -p /IN /temp
+sudo chmod 755 /IN /temp
+sudo chown root:root /IN
+sudo chown root:root /temp
+
+# Clean cloud-init logs and disable cloud-init
 sudo cloud-init clean --logs
 sudo touch /etc/cloud/cloud-init.disabled
 sudo rm -rf /etc/netplan/*.yaml
+
+# Purge cloud-init and remove residual configurations
 sudo apt purge cloud-init -y
 sudo apt autoremove -y
 
-# Modify tmp settings
+# Ensure /tmp is not cleared on reboot
 sudo sed -i 's/D \/tmp 1777 root root -/#D \/tmp 1777 root root -/g' /usr/lib/tmpfiles.d/tmp.conf
 
-# Modify open-vm-tools service
+# Adjust open-vm-tools service to start after dbus
 sudo sed -i 's/Before=cloud-init-local.service/After=dbus.service/g' /lib/systemd/system/open-vm-tools.service
 
-# Cleanup SSH keys
+# Cleanup SSH keys and regenerate them on reboot
 sudo rm -f /etc/ssh/ssh_host_*
-
-# Add SSH key check on reboot
 sudo tee /etc/rc.local >/dev/null <<EOL
 #!/bin/sh -e
-#
-# rc.local
-#
-# This script is executed at the end of each multiuser runlevel.
-# Make sure that the script will "" on success or any other
-# value on error.
-#
-# In order to enable or disable this script just change the execution
-# bits.
-#
-
-# By default this script does nothing.
 test -f /etc/ssh/ssh_host_dsa_key || dpkg-reconfigure openssh-server
 exit 0
 EOL
-
-# Make rc.local executable
 sudo chmod +x /etc/rc.local
 
-# Clean up apt
-sudo apt clean
+# Update SSHd configuration to allow password authentication
+sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+sudo sed -i 's/#ChallengeResponseAuthentication yes/ChallengeResponseAuthentication yes/g' /etc/ssh/sshd_config
 
-# Reset machine-id
+# Uncomment PasswordAuthentication and ChallengeResponseAuthentication if commented
+sudo sed -i 's/#PasswordAuthentication/PasswordAuthentication/g' /etc/ssh/sshd_config
+sudo sed -i 's/#ChallengeResponseAuthentication/ChallengeResponseAuthentication/g' /etc/ssh/sshd_config
+
+# Reset machine-id for DHCP leases
 echo "" | sudo tee /etc/machine-id >/dev/null
 
 # Disable swap for Kubernetes
