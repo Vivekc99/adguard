@@ -19,33 +19,20 @@ sudo apt clean
 # Set root password
 echo "root:p@ssw0rd123" | sudo chpasswd
 
-# Define the path to the sshd_config file
-sshd_config="/etc/ssh/sshd_config"
+# Define the lines to add
+lines_to_add="ChallengeResponseAuthentication yes
+PermitRootLogin yes
+PasswordAuthentication yes"
 
-# Check if the sshd_config file exists
-if [ ! -f "$sshd_config" ]; then
-    echo "Error: sshd_config file not found at $sshd_config"
-    exit 1
-fi
+# Path to the sshd_config file
+sshd_config_file="/etc/ssh/sshd_config"
 
-# Function to enable or update SSH config options
-enable_ssh_option() {
-    local option_name=$1
-    local option_value=$2
+# Add the lines to the sshd_config file
+echo "$lines_to_add" | sudo tee -a "$sshd_config_file" > /dev/null
 
-    # Check if the option is already enabled
-    if grep -q "^$option_name $option_value" "$sshd_config"; then
-        echo "$option_name is already set to $option_value."
-    else
-        # Add or update the option
-        if ! grep -q "^$option_name" "$sshd_config"; then
-            echo "$option_name $option_value" >> "$sshd_config"
-        else
-            sed -i "s/^$option_name.*/$option_name $option_value/" "$sshd_config"
-        fi
-        echo "$option_name has been set to $option_value."
-    fi
-}
+
+# Restart SSH service
+sudo service ssh restart
 
 # Create root directories with appropriate permissions
 sudo mkdir -p /IN /temp
@@ -75,15 +62,6 @@ test -f /etc/ssh/ssh_host_dsa_key || dpkg-reconfigure openssh-server
 exit 0
 EOL
 sudo chmod +x /etc/rc.local
-
-# Enable ChallengeResponseAuthentication
-enable_ssh_option "ChallengeResponseAuthentication" "yes"
-
-# Enable PasswordAuthentication
-enable_ssh_option "PasswordAuthentication" "yes"
-
-# Restart SSH service to apply changes
-sudo systemctl restart ssh
 
 # Reset machine-id for DHCP leases
 echo "" | sudo tee /etc/machine-id >/dev/null
