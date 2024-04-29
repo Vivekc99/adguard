@@ -28,7 +28,7 @@ sudo chown root:root /temp
 # Clean cloud-init logs and disable cloud-init
 sudo cloud-init clean --logs
 sudo touch /etc/cloud/cloud-init.disabled
-sudo rm -rf /etc/netplan/*.yaml
+#sudo rm -rf /etc/netplan/*.yaml
 
 # Purge cloud-init and remove residual configurations
 sudo apt purge cloud-init -y
@@ -67,4 +67,4 @@ sudo sed -ri '/\sswap\s/s/^#?/#/' /etc/fstab
 # Cleanup shell history and shutdown
 history -c
 history -w
-sudo shutdown -h now
+#sudo shutdown -h now
