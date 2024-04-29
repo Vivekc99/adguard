@@ -8,7 +8,7 @@ sudo apt update
 sudo apt install cockpit -y
 
 # Changing Cockpit default port to 5000
-sudo sed -i 's/ListenStream=9000/ListenStream=5000/g' /lib/systemd/system/cockpit.socket
+sudo sed -i 's/ListenStream=9090/ListenStream=5000/g' /lib/systemd/system/cockpit.socket
 
 # Reloading systemd daemon to apply changes
 sudo systemctl daemon-reload
