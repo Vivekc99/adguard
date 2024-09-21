@@ -3,10 +3,6 @@ items:
 - apiVersion: metallb.io/v1beta1
   kind: IPAddressPool
   metadata:
-    annotations:
-      kubectl.kubernetes.io/last-applied-configuration: |
-        {"apiVersion":"metallb.io/v1beta1","kind":"IPAddressPool","metadata":{"annotations":{},"name":"first-pool","namespace":"metallb-system"},"spec":{"addresses":["100.64.88.50-100.64.88.99"]}}
-    generation: 1
     name: first-pool
     namespace: metallb-system
   spec:
@@ -14,6 +10,3 @@ items:
     - 100.64.88.50-100.64.88.99
     autoAssign: true
     avoidBuggyIPs: false
-kind: List
-metadata:
-  resourceVersion: ""
