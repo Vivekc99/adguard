@@ -6,5 +6,3 @@ metadata:
 spec:
   addresses:
   - 100.64.88.50-100.64.88.99
-  autoAssign: true
-  avoidBuggyIPs: fals
